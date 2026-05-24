@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>한화에너지 세종 본사 길찾기</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #FF6000;
+      --primary-dark: #E05000;
+      --primary-light: #FFF3EC;
+      --text: #1A1A1A;
+      --text-secondary: #666;
+      --border: #E0E0E0;
+      --bg: #F5F5F5;
+      --white: #FFFFFF;
+      --shadow: 0 2px 12px rgba(0,0,0,0.1);
+    }
+
+    body {
+      font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo {
+      width: 32px; height: 32px;
+      background: var(--primary);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo svg { width: 20px; height: 20px; fill: white; }
+    header h1 { font-size: 18px; font-weight: 700; color: var(--text); }
+    header span { font-size: 13px; color: var(--text-secondary); margin-left: 4px; }
+
+    /* ── Layout ── */
+    .container {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 60px);
+      overflow: hidden;
+    }
+
+    /* ── Left Panel ── */
+    .panel {
+      width: 380px;
+      min-width: 380px;
+      background: var(--white);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+    }
+
+    .panel-section {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-section:last-child { border-bottom: none; }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    /* API Key setup */
+    .api-setup {
+      background: #FFF8F0;
+      border: 1px solid #FFD0AA;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 4px;
+    }
+    .api-setup p {
+      font-size: 12px;
+      color: #994400;
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+    .api-setup a { color: var(--primary); text-decoration: underline; }
+    .api-key-row {
+      display: flex;
+      gap: 8px;
+    }
+    .api-key-row input {
+      flex: 1;
+      border: 1px solid #FFD0AA;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 13px;
+      background: white;
+      color: var(--text);
+    }
+    .api-key-row input:focus { outline: 2px solid var(--primary); border-color: transparent; }
+    .btn-small {
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-small:hover { background: var(--primary-dark); }
+
+    /* Location inputs */
+    .location-box {
+      position: relative;
+      margin-bottom: 8px;
+    }
+    .location-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot-start { background: #4CAF50; }
+    .dot-end   { background: var(--primary); }
+    .location-label span { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+    .input-row input {
+      flex: 1;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg);
+      transition: border-color 0.2s;
+    }
+    .input-row input:focus { outline: none; border-color: var(--primary); background: white; }
+    .input-row input::placeholder { color: #AAA; }
+
+    .dest-box {
+      background: var(--primary-light);
+      border: 1.5px solid #FFCCA8;
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .dest-box .dest-icon { font-size: 18px; }
+    .dest-box .dest-info { flex: 1; }
+    .dest-box .dest-name { font-size: 14px; font-weight: 700; color: var(--text); }
+    .dest-box .dest-addr { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+    .divider-line {
+      display: flex;
+      align-items: center;
+      margin: 4px 0;
+      padding-left: 4px;
+      color: var(--border);
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    /* Transport tabs */
+    .transport-tabs {
+      display: flex;
+      gap: 8px;
+    }
+    .tab-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 6px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    .tab-btn .tab-icon { font-size: 20px; }
+    .tab-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .tab-btn.active {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: white;
+    }
+
+    /* Route button */
+    .btn-route {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-route:hover { background: var(--primary-dark); }
+    .btn-route:disabled { background: #CCC; cursor: not-allowed; }
+
+    /* Route results */
+    .route-result {
+      display: none;
+    }
+    .route-result.show { display: block; }
+
+    .route-card {
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 10px;
+      background: white;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .route-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(255,96,0,0.15); }
+    .route-card.selected { border-color: var(--primary); background: var(--primary-light); }
+
+    .route-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .route-type-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: var(--primary);
+      color: white;
+    }
+    .route-time {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .route-time span { font-size: 13px; font-weight: 400; color: var(--text-secondary); }
+    .route-meta {
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .route-meta .tag {
+      background: var(--bg);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .external-links {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .btn-map {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn-map:hover { opacity: 0.85; }
+    .btn-kakao { background: #FEE500; color: #3C1E1E; }
+    .btn-naver { background: #03C75A; color: white; }
+    .btn-google { background: #4285F4; color: white; }
+
+    .loading-overlay {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 16px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+    .loading-overlay.show { display: flex; }
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Map area ── */
+    #map {
+      flex: 1;
+      background: #E8E8E8;
+      position: relative;
+    }
+    #map-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: #AAA;
+    }
+    #map-placeholder .placeholder-icon { font-size: 48px; }
+    #map-placeholder p { font-size: 14px; }
+
+    /* Scrollbar */
+    .panel::-webkit-scrollbar { width: 4px; }
+    .panel::-webkit-scrollbar-track { background: transparent; }
+    .panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* Responsive */
+    @media (max-width: 700px) {
+      .container { flex-direction: column; height: auto; overflow: visible; }
+      .panel { width: 100%; min-width: unset; max-height: 60vh; border-right: none; border-bottom: 1px solid var(--border); }
+      #map { height: 50vh; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+  </div>
+  <h1>한화에너지 길찾기</h1>
+  <span>세종 본사</span>
+</header>
+
+<div class="container">
+
+  <!-- ── Left Panel ── -->
+  <div class="panel">
+
+    <!-- API Key section -->
+    <div class="panel-section">
+      <div class="section-title">카카오맵 API 설정</div>
+      <div class="api-setup">
+        <p>지도를 사용하려면 카카오 JavaScript 앱 키가 필요합니다.<br>
+           <a href="https://developers.kakao.com/console/app" target="_blank">kakao developers</a>에서 앱 키를 발급받으세요.</p>
+        <div class="api-key-row">
+          <input type="text" id="apiKeyInput" placeholder="JavaScript 앱 키 입력" />
+          <button class="btn-small" onclick="applyApiKey()">적용</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Location input -->
+    <div class="panel-section">
+      <div class="section-title">출발지 · 도착지</div>
+
+      <!-- Start -->
+      <div class="location-box">
+        <div class="location-label">
+          <div class="dot dot-start"></div>
+          <span>출발지</span>
+        </div>
+        <div class="input-row">
+          <input type="text" id="startInput" placeholder="주소 또는 장소 이름 입력"
+                 onkeydown="if(event.key==='Enter') searchAddress()" />
+          <button class="btn-small" onclick="openPostcode()">검색</button>
+        </div>
+      </div>
+
+      <div class="divider-line">│</div>
+
+      <!-- Destination (fixed) -->
+      <div class="location-box">
+        <div class="location-label">
+          <div class="dot dot-end"></div>
+          <span>도착지</span>
+        </div>
+        <div class="dest-box">
+          <div class="dest-icon">🏢</div>
+          <div class="dest-info">
+            <div class="dest-name">한화에너지 세종 본사</div>
+            <div class="dest-addr">세종특별자치시 한솔동 11</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transport type -->
+    <div class="panel-section">
+      <div class="section-title">이동 수단</div>
+      <div class="transport-tabs">
+        <button class="tab-btn active" data-mode="CAR" onclick="selectMode(this)">
+          <span class="tab-icon">🚗</span>자동차
+        </button>
+        <button class="tab-btn" data-mode="PUBLIC" onclick="selectMode(this)">
+          <span class="tab-icon">🚌</span>대중교통
+        </button>
+        <button class="tab-btn" data-mode="WALK" onclick="selectMode(this)">
+          <span class="tab-icon">🚶</span>도보
+        </button>
+        <button class="tab-btn" data-mode="BIKE" onclick="selectMode(this)">
+          <span class="tab-icon">🚲</span>자전거
+        </button>
+      </div>
+    </div>
+
+    <!-- Route button -->
+    <div class="panel-section">
+      <button class="btn-route" id="routeBtn" onclick="findRoute()" disabled>
+        <span>🔍</span> 경로 탐색
+      </button>
+      <div class="loading-overlay" id="loading">
+        <div class="spinner"></div> 경로를 탐색하는 중...
+      </div>
+    </div>
+
+    <!-- Route results -->
+    <div class="panel-section route-result" id="routeResult">
+      <div class="section-title">추천 경로</div>
+      <div id="routeCards"></div>
+    </div>
+
+    <!-- External links -->
+    <div class="panel-section route-result" id="externalLinks">
+      <div class="section-title">앱으로 이동</div>
+      <div class="external-links">
+        <a id="kakaoLink" class="btn-map btn-kakao" target="_blank">
+          🗺️ 카카오맵으로 길찾기
+        </a>
+        <a id="naverLink" class="btn-map btn-naver" target="_blank">
+          🗺️ 네이버 지도로 길찾기
+        </a>
+        <a id="googleLink" class="btn-map btn-google" target="_blank">
+          🗺️ 구글 지도로 길찾기
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Map ── -->
+  <div id="map">
+    <div id="map-placeholder">
+      <div class="placeholder-icon">🗺️</div>
+      <p>API 키를 입력하고 출발지를 설정하면 지도가 표시됩니다</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Kakao Postcode SDK -->
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+
+<script>
+  /* ── Constants ── */
+  const DEST = {
+    name: '한화에너지 세종 본사',
+    addr: '세종특별자치시 한솔동 11',
+    lat: 36.5042,
+    lng: 127.2494,
+  };
+
+  let kakaoMap = null;
+  let startMarker = null;
+  let destMarker = null;
+  let routeLine = null;
+  let currentMode = 'CAR';
+  let startCoords = null;
+  let apiKey = '';
+
+  /* ── API Key ── */
+  function applyApiKey() {
+    apiKey = document.getElementById('apiKeyInput').value.trim();
+    if (!apiKey) return alert('API 키를 입력해 주세요.');
+    loadKakaoMap();
+  }
+
+  function loadKakaoMap() {
+    if (window.kakao && kakao.maps) { initMap(); return; }
+    const script = document.createElement('script');
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services&autoload=false`;
+    script.onload = () => kakao.maps.load(initMap);
+    script.onerror = () => alert('API 키가 올바르지 않거나 카카오맵을 불러오지 못했습니다.');
+    document.head.appendChild(script);
+  }
+
+  function initMap() {
+    document.getElementById('map-placeholder').style.display = 'none';
+    const container = document.getElementById('map');
+    const options = {
+      center: new kakao.maps.LatLng(DEST.lat, DEST.lng),
+      level: 7,
+    };
+    kakaoMap = new kakao.maps.Map(container, options);
+
+    // Destination marker
+    const destPos = new kakao.maps.LatLng(DEST.lat, DEST.lng);
+    destMarker = new kakao.maps.Marker({
+      position: destPos,
+      map: kakaoMap,
+    });
+    const destInfo = new kakao.maps.InfoWindow({
+      content: `<div style="padding:8px 12px;font-size:13px;font-weight:700;color:#FF6000;">🏢 ${DEST.name}</div>`,
+    });
+    destInfo.open(kakaoMap, destMarker);
+
+    // Enable route button if start coords exist
+    updateRouteBtn();
+  }
+
+  /* ── Address Search (Daum Postcode) ── */
+  function openPostcode() {
+    new daum.Postcode({
+      oncomplete: function(data) {
+        const fullAddr = data.roadAddress || data.jibunAddress;
+        document.getElementById('startInput').value = fullAddr;
+        geocodeAddress(fullAddr);
+      }
+    }).open();
+  }
+
+  function searchAddress() {
+    const query = document.getElementById('startInput').value.trim();
+    if (!query) return;
+    if (!kakaoMap) {
+      alert('먼저 카카오맵 API 키를 입력하고 적용해 주세요.');
+      return;
+    }
+    geocodeAddress(query);
+  }
+
+  function geocodeAddress(address) {
+    if (!window.kakao || !kakao.maps) return;
+    const geocoder = new kakao.maps.services.Geocoder();
+    geocoder.addressSearch(address, function(result, status) {
+      if (status === kakao.maps.services.Status.OK) {
+        const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+        startCoords = { lat: parseFloat(result[0].y), lng: parseFloat(result[0].x) };
+        setStartMarker(coords, address);
+        updateRouteBtn();
+      } else {
+        // Try keyword search
+        const places = new kakao.maps.services.Places();
+        places.keywordSearch(address, function(r, s) {
+          if (s === kakao.maps.services.Status.OK) {
+            const coords = new kakao.maps.LatLng(r[0].y, r[0].x);
+            startCoords = { lat: parseFloat(r[0].y), lng: parseFloat(r[0].x) };
+            document.getElementById('startInput').value = r[0].place_name;
+            setStartMarker(coords, r[0].place_name);
+            updateRouteBtn();
+          } else {
+            alert('주소를 찾을 수 없습니다. 다시 시도해 주세요.');
+          }
+        });
+      }
+    });
+  }
+
+  function setStartMarker(coords, label) {
+    if (startMarker) startMarker.setMap(null);
+    startMarker = new kakao.maps.Marker({ position: coords, map: kakaoMap });
+    const info = new kakao.maps.InfoWindow({
+      content: `<div style="padding:6px 10px;font-size:12px;font-weight:600;">📍 ${label}</div>`,
+    });
+    info.open(kakaoMap, startMarker);
+    fitBounds();
+  }
+
+  function fitBounds() {
+    if (!startCoords || !kakaoMap) return;
+    const bounds = new kakao.maps.LatLngBounds();
+    bounds.extend(new kakao.maps.LatLng(startCoords.lat, startCoords.lng));
+    bounds.extend(new kakao.maps.LatLng(DEST.lat, DEST.lng));
+    kakaoMap.setBounds(bounds);
+  }
+
+  /* ── Transport Mode ── */
+  function selectMode(btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMode = btn.dataset.mode;
+  }
+
+  /* ── Route button state ── */
+  function updateRouteBtn() {
+    const btn = document.getElementById('routeBtn');
+    btn.disabled = !(startCoords && (window.kakao && kakaoMap));
+  }
+
+  /* ── Route Finding ── */
+  async function findRoute() {
+    if (!startCoords) return;
+
+    document.getElementById('loading').classList.add('show');
+    document.getElementById('routeResult').classList.remove('show');
+    document.getElementById('externalLinks').classList.remove('show');
+
+    await new Promise(r => setTimeout(r, 800));
+
+    const dist = haversine(startCoords.lat, startCoords.lng, DEST.lat, DEST.lng);
+    const routes = estimateRoutes(dist, currentMode);
+
+    renderRouteCards(routes);
+    updateExternalLinks();
+    drawRouteLine();
+
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('routeResult').classList.add('show');
+    document.getElementById('externalLinks').classList.add('show');
+  }
+
+  function haversine(lat1, lng1, lat2, lng2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 +
+              Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  function estimateRoutes(dist, mode) {
+    const km = Math.round(dist * 10) / 10;
+    if (mode === 'CAR') {
+      const mins = Math.round(dist / 70 * 60);
+      return [
+        { label: '추천', type: '빠른 길', time: mins, dist: km, toll: Math.round(dist * 80), info: '고속도로 이용' },
+        { label: '경제', type: '최적 경로', time: Math.round(mins * 1.15), dist: Math.round(km * 0.95 * 10)/10, toll: 0, info: '국도·지방도 이용' },
+        { label: '무료', type: '무료 도로', time: Math.round(mins * 1.35), dist: Math.round(km * 1.1 * 10)/10, toll: 0, info: '통행료 없음' },
+      ];
+    } else if (mode === 'PUBLIC') {
+      const mins = Math.round(dist / 40 * 60 + 20);
+      return [
+        { label: '추천', type: '대중교통', time: mins, dist: km, fare: Math.max(1500, Math.round(dist * 100 / 100) * 100), info: '버스·지하철 환승' },
+        { label: '직통', type: '직통 버스', time: Math.round(mins * 1.1), dist: km, fare: Math.max(2000, Math.round(dist * 120 / 100) * 100), info: '환승 없음' },
+      ];
+    } else if (mode === 'WALK') {
+      const mins = Math.round(dist / 4.5 * 60);
+      return [
+        { label: '도보', type: '도보', time: mins, dist: km, info: '보행자 전용 경로' },
+      ];
+    } else {
+      const mins = Math.round(dist / 15 * 60);
+      return [
+        { label: '자전거', type: '자전거', time: mins, dist: km, info: '자전거 전용 도로' },
+      ];
+    }
+  }
+
+  function renderRouteCards(routes) {
+    const container = document.getElementById('routeCards');
+    container.innerHTML = routes.map((r, i) => `
+      <div class="route-card ${i===0?'selected':''}" onclick="selectCard(this)">
+        <div class="route-card-header">
+          <span class="route-type-badge">${r.label}</span>
+          <div class="route-time">${formatTime(r.time)} <span>소요</span></div>
+        </div>
+        <div class="route-meta">
+          <span class="tag">📏 ${r.dist} km</span>
+          ${r.toll  != null ? `<span class="tag">🛣️ 통행료 ${r.toll.toLocaleString()}원</span>` : ''}
+          ${r.fare  != null ? `<span class="tag">🎫 ${r.fare.toLocaleString()}원</span>` : ''}
+          <span class="tag">ℹ️ ${r.info}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function selectCard(el) {
+    document.querySelectorAll('.route-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function formatTime(mins) {
+    if (mins < 60) return `${mins}분`;
+    const h = Math.floor(mins / 60), m = mins % 60;
+    return m ? `${h}시간 ${m}분` : `${h}시간`;
+  }
+
+  function updateExternalLinks() {
+    if (!startCoords) return;
+    const modeMap = { CAR: 'car', PUBLIC: 'pubtrn', WALK: 'walk', BIKE: 'car' };
+    const kakaoMode = modeMap[currentMode] || 'car';
+    const startAddr = encodeURIComponent(document.getElementById('startInput').value);
+    const destAddr = encodeURIComponent(DEST.addr);
+
+    document.getElementById('kakaoLink').href =
+      `https://map.kakao.com/link/from/${startAddr},${startCoords.lat},${startCoords.lng}/to/${encodeURIComponent(DEST.name)},${DEST.lat},${DEST.lng}`;
+
+    document.getElementById('naverLink').href =
+      `https://map.naver.com/v5/directions/${startCoords.lng},${startCoords.lat},${startAddr}/${DEST.lng},${DEST.lat},${encodeURIComponent(DEST.name)}/-/${kakaoMode === 'car' ? 'car' : kakaoMode === 'pubtrn' ? 'transit' : 'walk'}`;
+
+    document.getElementById('googleLink').href =
+      `https://www.google.com/maps/dir/?api=1&origin=${startCoords.lat},${startCoords.lng}&destination=${DEST.lat},${DEST.lng}&travelmode=${currentMode==='CAR'?'driving':currentMode==='PUBLIC'?'transit':currentMode==='WALK'?'walking':'bicycling'}`;
+  }
+
+  function drawRouteLine() {
+    if (!kakaoMap || !startCoords) return;
+    if (routeLine) routeLine.setMap(null);
+    const path = [
+      new kakao.maps.LatLng(startCoords.lat, startCoords.lng),
+      new kakao.maps.LatLng(DEST.lat, DEST.lng),
+    ];
+    routeLine = new kakao.maps.Polyline({
+      path,
+      strokeWeight: 4,
+      strokeColor: '#FF6000',
+      strokeOpacity: 0.8,
+      strokeStyle: 'shortdash',
+    });
+    routeLine.setMap(kakaoMap);
+    fitBounds();
+  }
+</script>
+
+</body>
+</html>
